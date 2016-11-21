@@ -1,37 +1,26 @@
 <?php
-namespace danielme85\Geoip2;
-/*
- * The MIT License
- *
- * Copyright 2016 Daniel Mellum.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-use Illuminate\Support\Facades\Facade;
 /**
- * Description of
- *
- * @author dmellum
+ * Created by PhpStorm.
+ * User: dmellum
+ * Date: 11/21/16
+ * Time: 3:28 PM
+ *  ___       _               _           _               ___
+ * |_ _|_ __ | |_ ___ _ __ __| | ___  ___(_) __ _ _ __   |_ _|_ __   ___
+ *  | || '_ \| __/ _ \ '__/ _` |/ _ \/ __| |/ _` | '_ \   | || '_ \ / __|
+ *  | || | | | ||  __/ | | (_| |  __/\__ \ | (_| | | | |  | || | | | (__
+ * |___|_| |_|\__\___|_|  \__,_|\___||___/_|\__, |_| |_| |___|_| |_|\___|
+ *                                          |___/
  */
-class Reader extends Facade {
-    protected static function getFacadeAccessor()
+
+namespace danielme85\Geoip2;
+
+use GeoIp2\Database\Reader;
+
+class Reader
+{
+    function __construct($path)
     {
-        return 'Reader';
+        return new Reader($path);
     }
+
 }

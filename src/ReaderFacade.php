@@ -23,39 +23,15 @@ namespace danielme85\Geoip2;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-use Illuminate\Support\ServiceProvider;
-
-class Geoip2ServiceProvider extends ServiceProvider {
-    /**
-     * Bootstrap the application services.
-     *
-     * @return void
-     */
-    public function boot()
+use Illuminate\Support\Facades\Facade;
+/**
+ * Description of
+ *
+ * @author dmellum
+ */
+class ReaderFacade extends Facade {
+    protected static function getFacadeAccessor()
     {
-        //register commands
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                Commands\Downloader::class
-            ]);
-        }
-
-        //register conf
-        $this->publishes([
-            __DIR__.'/config/geoip2.php' => config_path('geoip2.php'),
-        ]);
-    }
-
-    /**
-     * Register the application services.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->app->bind('Reader', function()
-        {
-            return new Reader(storage_path(config('geoip2.dbName')));
-        });
+        return 'Reader';
     }
 }
