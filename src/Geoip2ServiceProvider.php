@@ -24,7 +24,6 @@ namespace danielme85\Geoip2;
  * THE SOFTWARE.
  */
 use Illuminate\Support\ServiceProvider;
-use GeoIp2\Database\Reader;
 
 class Geoip2ServiceProvider extends ServiceProvider {
     /**
@@ -56,7 +55,7 @@ class Geoip2ServiceProvider extends ServiceProvider {
     {
         $this->app->bind('Reader', function()
         {
-            return new Reader(storage_path(config('geoip2.dbName')));
+            return new \GeoIp2\Database\Reader(storage_path(config('geoip2.dbName')));
         });
     }
 }
