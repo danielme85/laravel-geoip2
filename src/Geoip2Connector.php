@@ -14,13 +14,11 @@
 
 namespace danielme85\Geoip2;
 
-use GeoIp2\Database\Reader;
-
-class Reader
+class Geoip2Connector
 {
-    function __construct($path)
+    public static function connect()
     {
-        return new Reader($path);
+        return new \GeoIp2\Database\Reader(storage_path(config('geoip2.dbName')));
     }
 
 }

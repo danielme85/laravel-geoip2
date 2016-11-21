@@ -55,7 +55,7 @@ class Geoip2ServiceProvider extends ServiceProvider {
     {
         $this->app->bind('Reader', function()
         {
-            return new Reader(storage_path(config('geoip2.dbName')));
+            return new Geoip2Connector();
         });
     }
 }

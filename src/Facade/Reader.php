@@ -1,5 +1,5 @@
 <?php
-namespace danielme85\Geoip2;
+namespace danielme85\Geoip2\Facade;
 /*
  * The MIT License
  *
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Facade;
  *
  * @author dmellum
  */
-class ReaderFacade extends Facade {
+class Reader extends Facade {
     protected static function getFacadeAccessor()
     {
         return 'Reader';
