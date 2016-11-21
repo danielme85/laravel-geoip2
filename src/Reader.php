@@ -29,9 +29,9 @@ use Illuminate\Support\Facades\Facade;
  *
  * @author dmellum
  */
-class Geoip2 extends Facade {
+class Reader extends Facade {
     protected static function getFacadeAccessor()
     {
-        return 'Geoip2';
+        return 'Reader';
     }
 }

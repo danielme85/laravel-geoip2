@@ -25,6 +25,7 @@ namespace danielme85\Geoip2;
  */
 use Illuminate\Support\ServiceProvider;
 use GeoIp2\Database\Reader;
+
 class Geoip2ServiceProvider extends ServiceProvider {
     /**
      * Bootstrap the application services.
@@ -36,7 +37,7 @@ class Geoip2ServiceProvider extends ServiceProvider {
         //register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                Downloader::class
+                Commands\Downloader::class
             ]);
         }
 
@@ -53,7 +54,7 @@ class Geoip2ServiceProvider extends ServiceProvider {
      */
     public function register()
     {
-        $this->app->bind('Geoip2', function()
+        $this->app->bind('Reader', function()
         {
             return new Reader(storage_path(config('geoip2.dbName')));
         });

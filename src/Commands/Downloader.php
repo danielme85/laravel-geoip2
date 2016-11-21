@@ -1,5 +1,5 @@
 <?php
-namespace danielme85\Geoip2;
+namespace danielme85\Geoip2\Commands;
 /*
  * The MIT License
  *
