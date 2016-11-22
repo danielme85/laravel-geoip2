@@ -6,7 +6,7 @@ https://github.com/maxmind/GeoIP2-php
 Add to composer.json
  ```
  "require": {
-         "danielme85/laravel-geoip2"": "dev-master",
+         "danielme85/laravel-geoip2": "dev-master",
          ....
  }
  ```
