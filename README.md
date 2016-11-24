@@ -2,8 +2,7 @@
 Service provider and DB downloader, Laravel 5.3 for Maxminds PHP API GeoIP2.
 https://github.com/maxmind/GeoIP2-php
 
-###Install
-Add to composer.json
+###Installroutingcomposer.json
  ```
  "require": {
          "danielme85/laravel-geoip2": "dev-master",
@@ -63,8 +62,38 @@ Add to composer.json
  $reader = Reader::connect();
  $result = $reader->city($ip);
  ```
-Usage once you have the Reader:connect object is the same as maxminds documentation
-https://github.com/maxmind/GeoIP2-php
+ Usage once you have the Reader:connect object is the same as maxminds documentation
+ https://github.com/maxmind/GeoIP2-php
+ Example usage, return json location data based on ipv4 address.
+ ```php
+ <?php
+ use danielme85\Geoip2\Facade\Reader;
+ ...
+ 
+ function getLocation(Request $request) {
+    $reader = Reader::connect();
+    /*
+    I was experiencing inaccurate results... until I remembered that my web server traffic was routed trough CloudFlare :p
+    In that case CloudFlare provides the original client ip in the following header information.
+    */   
+    if (isset($_SERVER["HTTP_CF_CONNECTING_IP"])) {
+        $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
+    }
+    else {
+        $ip = $request->ip();
+    }
+    //the city() function from the GeoIp2 Php API will throw an exception if the ip-address is not found in the DB.
+    try {
+        $geodata = $reader->city($ip)->jsonSerialize(); //jsonSerialize seems to actually return an associative array.
+    }
+    catch (\Exception $e) {
+        Log::warning($e->getMessage());
+        return response()->json("Geo-location not found!", 500);
+    }
+
+    return response()->json($geodata);
+}
+ ```
 
 <small>This product includes GeoLite2 data created by MaxMind, available from
 <a href="http://www.maxmind.com" target="_blank">http://www.maxmind.com</a></small>
