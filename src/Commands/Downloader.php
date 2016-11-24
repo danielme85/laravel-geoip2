@@ -65,6 +65,11 @@ class Downloader extends Command
         $this->downloadUrl = config('geoip2.downloadUrl');
         $this->dbFilePath = storage_path(config('geoip2.dbName'));
 
+        if (!$this->downloadFile or !$this->downloadUrl or !$this->dbFilePath) {
+            $this->error('Config settings not found, did you run "php artisan vendor:publish" ?');
+            exit();
+        }
+
         try {
             if (file_exists($this->downloadFile)) {
                 if ($this->confirm('Found downloaded file, download a new one instead? [y|N]')) {
