@@ -2,7 +2,8 @@
 Service provider and DB downloader, Laravel 5.3 for Maxminds PHP API GeoIP2.
 https://github.com/maxmind/GeoIP2-php
 
-###Installroutingcomposer.json
+###Install
+In composer.json
  ```
  "require": {
          "danielme85/laravel-geoip2": "dev-master",
@@ -33,7 +34,7 @@ https://github.com/maxmind/GeoIP2-php
  $app->withFacades();
  ```
  
- ####Config
+####Config
  Publish the config file to your Laravel projects
   ```
   php artisan vendor:publish
@@ -50,7 +51,7 @@ https://github.com/maxmind/GeoIP2-php
   ];
   ```
  
- ###Usage
+###Usage
  You need to download the Maxmind Geoip first, the default config is for the city version (about 30MB download, 50MB extracted).
  ```
  php artisan geoip:download
@@ -63,7 +64,8 @@ https://github.com/maxmind/GeoIP2-php
  $result = $reader->city($ip);
  ```
  Usage once you have the Reader:connect object is the same as maxminds documentation
- https://github.com/maxmind/GeoIP2-php
+ https://github.com/maxmind/GeoIP2-php.
+ 
  Example usage, return json location data based on ipv4 address.
  ```php
  <?php
