@@ -2,7 +2,7 @@
 Service provider and DB downloader, Laravel 5.3 for Maxminds PHP API GeoIP2.
 https://github.com/maxmind/GeoIP2-php
 
-###Install
+### Install
 In composer.json
  ```
  "require": {
@@ -12,21 +12,21 @@ In composer.json
  ```
  or command: composer require danielme85/laravel-geoip2
 
-####Laravel 5.x
+#### Laravel 5.x
  Add to your config/app.php under Service Providers
             
  ```
  //Service Providers
- danielme85\ForceUTF8\Geoip2ServiceProvider::class,
+ danielme85\Geoip2\Geoip2ServiceProvider::class,
  //Facades
  'Reader'  => danielme85\Geoip2\Facade\Reader::class,
  
  ```
  
-####Lumen 5.x
+#### Lumen 5.x
  Add to your boostrap/app.php file
  ```
- $app->register(danielme85\ForceUTF8\Geoip2ServiceProvider::class);
+ $app->register(danielme85\Geoip2\Geoip2ServiceProvider::class);
  ...
  $app->configure('app'); 
  ...
@@ -34,10 +34,10 @@ In composer.json
  $app->withFacades();
  ```
  
-####Config
+#### Config
  Publish the config file to your Laravel projects
   ```
-  php artisan vendor:publish
+php artisan vendor:publish --provider="danielme85\Geoip2\Geoip2ServiceProvider"
   ```
   The following default settings will work right away:
   ```
@@ -51,7 +51,7 @@ In composer.json
   ];
   ```
  
-###Usage
+### Usage
  You need to download the Maxmind Geoip first, the default config is for the city version (about 30MB download, 50MB extracted).
  ```
  php artisan geoip:download
