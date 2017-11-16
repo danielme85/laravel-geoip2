@@ -2,6 +2,9 @@
 Service provider and DB downloader, Laravel 5.3 for Maxminds PHP API GeoIP2.
 https://github.com/maxmind/GeoIP2-php
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/danielme85/laravel-geoip2.svg?branch=master)](https://travis-ci.org/danielme85/laravel-geoip2)
+
 ### Install
 In composer.json
  ```
