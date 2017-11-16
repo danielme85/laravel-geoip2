@@ -14,7 +14,8 @@ Add to composer.json
 
 ####Laravel 5.x
  Add to your config/app.php under Service Providers
-            
+ <br>*(If you use Laravel 5.5+ you could skip this step as Autodiscovery has been enabled for this package.)*
+           
  ```
  //Service Providers
  danielme85\ForceUTF8\Geoip2ServiceProvider::class,
