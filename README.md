@@ -5,6 +5,10 @@ https://github.com/maxmind/GeoIP2-php
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/danielme85/laravel-geoip2.svg?branch=master)](https://travis-ci.org/danielme85/laravel-geoip2)
 
+<b>Per Jan 2020 you now have to create an account at MaxMind and get a "license key". It is still free of charge per now.</b>
+
+[https://dev.maxmind.com/geoip/geoip2/geolite2/](https://dev.maxmind.com/geoip/geoip2/geolite2/)
+
 ### Install
 In composer.json
  ```
@@ -14,6 +18,11 @@ In composer.json
  }
  ```
  or command: composer require danielme85/laravel-geoip2
+ 
+ Add your geoip licence to your env file:
+ ```
+GEOIP2_LICENSE=XXXXX
+```
 
 #### Laravel 5.x
  Add to your config/app.php under Service Providers

@@ -42,7 +42,7 @@ class Downloader extends Command
      */
     protected $description = 'Download geoip data from GeoLite2.';
 
-    protected $downloadFile, $downloadUrl, $dbFilePath;
+    protected $downloadFile, $downloadUrl, $dbFilePath, $license;
 
     /**
      * Create a new command instance.
@@ -64,6 +64,7 @@ class Downloader extends Command
         $this->downloadFile = storage_path(config('geoip2.tempFile'));
         $this->downloadUrl = config('geoip2.downloadUrl');
         $this->dbFilePath = storage_path(config('geoip2.dbName'));
+        $this->license = config('geoip2.license');
 
         if (!$this->downloadFile or !$this->downloadUrl or !$this->dbFilePath) {
             $this->error('Config settings not found, did you run "php artisan vendor:publish" ?');
@@ -94,7 +95,10 @@ class Downloader extends Command
     {
         $success = false;
         $client = new GuzzleHttp\Client();
-        if ($client->request('GET', $this->downloadUrl, ['sink' => $this->downloadFile])) {
+
+        $uri = $this->downloadUrl.'&license_key='.$this->license;
+
+        if ($client->request('GET', $uri, ['sink' => $this->downloadFile])) {
             if (is_file($this->downloadFile)) {
                 $this->info("File downloaded: $this->downloadFile");
                 $success = true;
