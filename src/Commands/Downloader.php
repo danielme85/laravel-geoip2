@@ -61,8 +61,8 @@ class Downloader extends Command
      */
     public function handle()
     {
-        $this->downloadFile = 'app/GeoLite2-City.mmdb.tar.gz';
-        $this->downloadTempFile = 'app/GeoLite2-City.mmdb.tar';
+        $this->downloadFile = storage_path('app/GeoLite2-City.mmdb.tar.gz');
+        $this->downloadTempFile = storage_path('app/GeoLite2-City.mmdb.tar');
         $this->downloadUrl = config('geoip2.downloadUrl');
         $this->dbFilePath = storage_path(config('geoip2.dbName'));
         $this->license = config('geoip2.license');
@@ -124,7 +124,7 @@ class Downloader extends Command
 
             if (is_file($this->downloadTempFile)) {
                 $phar = new \PharData($this->downloadFile);
-                $phar->extractTo($this->dbFilePath);
+                $phar->extractTo(storage_path('app/'));
             }
 
             if (is_file($this->dbFilePath)) {
