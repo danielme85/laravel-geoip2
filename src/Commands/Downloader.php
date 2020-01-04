@@ -42,7 +42,7 @@ class Downloader extends Command
      */
     protected $description = 'Download geoip data from GeoLite2.';
 
-    protected $downloadFile, $downloadUrl, $dbFilePath, $license;
+    protected $downloadFile, $downloadTempFile, $downloadUrl, $dbFilePath, $license;
 
     /**
      * Create a new command instance.
@@ -61,7 +61,8 @@ class Downloader extends Command
      */
     public function handle()
     {
-        $this->downloadFile = storage_path(config('geoip2.tempFile'));
+        $this->downloadFile = 'app/GeoLite2-City.mmdb.tar.gz';
+        $this->downloadTempFile = 'app/GeoLite2-City.mmdb.tar';
         $this->downloadUrl = config('geoip2.downloadUrl');
         $this->dbFilePath = storage_path(config('geoip2.dbName'));
         $this->license = config('geoip2.license');
@@ -110,7 +111,6 @@ class Downloader extends Command
     /**
      * Extract geoip file
      *
-     * https://gist.github.com/james2doyle/079292f8c498a427852b7f312fa94532
      *
      * @param bool $delete
      * @return bool
@@ -118,30 +118,29 @@ class Downloader extends Command
     private function extract($delete = true) {
         $success = false;
 
-        // Raising this value may increase performance
-        $buffer_size = 4096; // read 4kb at a time
-        // Open our files (in binary mode)
-        $file = gzopen($this->downloadFile, 'rb');
-        $out_file = fopen($this->dbFilePath, 'wb');
-        // Keep repeating until the end of the input file
-        while (!gzeof($file)) {
-            // Read buffer-size bytes
-            // Both fwrite and gzread and binary-safe
-            fwrite($out_file, gzread($file, $buffer_size));
-        }
-        // Files are done, close files
-        fclose($out_file);
-        gzclose($file);
+        if (is_file($this->downloadFile)) {
+            $phar = new \PharData($this->downloadFile);
+            $phar->decompress();
 
-        if (is_file($this->dbFilePath)) {
-            $success = true;
-            $this->info("Extracted file to: $this->dbFilePath");
-            if ($delete) {
-                if (unlink($this->downloadFile)) {
-                    $this->warn("Deleted file: $this->downloadFile");
+            if (is_file($this->downloadTempFile)) {
+                $phar = new \PharData($this->downloadFile);
+                $phar->extractTo($this->dbFilePath);
+            }
+
+            if (is_file($this->dbFilePath)) {
+                $success = true;
+                $this->info("Extracted file to: $this->dbFilePath");
+                if ($delete) {
+                    if (unlink($this->downloadFile)) {
+                        $this->warn("Deleted file: $this->downloadFile");
+                    }
+                    if (unlink($this->downloadTempFile)) {
+                        $this->warn("Deleted file: $this->downloadTempFile");
+                    }
                 }
             }
         }
+
         return $success;
     }
 
