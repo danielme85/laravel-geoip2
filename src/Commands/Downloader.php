@@ -42,7 +42,7 @@ class Downloader extends Command
      */
     protected $description = 'Download geoip data from GeoLite2.';
 
-    protected $downloadFile, $downloadTempFile, $downloadUrl, $dbFilePath, $license;
+    protected $dbFolder, $dbFileName, $downloadUrl, $license, $folderPath, $filePath;
 
     /**
      * Create a new command instance.
@@ -57,91 +57,99 @@ class Downloader extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
      */
     public function handle()
     {
-        $this->downloadFile = storage_path('app/GeoLite2-City.mmdb.tar.gz');
-        $this->downloadTempFile = storage_path('app/GeoLite2-City.mmdb.tar');
+        $this->dbFolder = storage_path(config('geoip2.folder'));
+        $this->dbFileName = config('geoip2.filename');
         $this->downloadUrl = config('geoip2.downloadUrl');
-        $this->dbFilePath = storage_path(config('geoip2.dbName'));
         $this->license = config('geoip2.license');
+        $this->folderPath = "{$this->dbFolder}/tmp";
+        $this->filePath = "{$this->folderPath}/{$this->dbFileName}";
 
-        if (!$this->downloadFile or !$this->downloadUrl or !$this->dbFilePath) {
-            $this->error('Config settings not found, did you run "php artisan vendor:publish" ?');
-            exit();
-        }
 
-        try {
-            if (file_exists($this->downloadFile)) {
-                if ($this->confirm('Found downloaded file, download a new one instead? [y|N]')) {
-                    $this->download();
-                }
-            }
-            else {
+        if (!file_exists($this->filePath.'.tar.gz')) {
+            $this->download();
+        } else {
+            if ($this->confirm('Found downloaded file, download a new one instead?')) {
                 $this->download();
             }
-            $this->extract();
-        } catch (\Exception $e) {
-            $this->error($e->getMessage());
         }
+
+        $this->extract();
     }
 
     /**
-     * Download geoip file
+     * Download geoip2 db file
      *
-     * @return bool
+     * @return string|null
      */
     private function download()
     {
-        $success = false;
         $client = new GuzzleHttp\Client();
-
         $uri = $this->downloadUrl.'&license_key='.$this->license;
 
-        if ($client->request('GET', $uri, ['sink' => $this->downloadFile])) {
-            if (is_file($this->downloadFile)) {
-                $this->info("File downloaded: $this->downloadFile");
-                $success = true;
+        if (!file_exists($this->folderPath)) {
+            mkdir($this->folderPath, 0755, true);
+        }
+
+        if ($client->request('GET', $uri, ['sink' => $this->filePath.'.tar'])) {
+            if (file_exists( $this->filePath.'.tar')) {
+                $this->info("File downloaded:  $this->filePath.'.tar'");
+
+                return true;
             }
         }
-        return $success;
+
+        return false;
     }
 
     /**
      * Extract geoip file
      *
      *
-     * @param bool $delete
      * @return bool
      */
-    private function extract($delete = true) {
+    private function extract()
+    {
         $success = false;
 
-        if (is_file($this->downloadFile)) {
-            $phar = new \PharData($this->downloadFile);
+        if (file_exists($this->filePath . '.tar.gz') && !file_exists($this->filePath . '.tar')) {
+            $phar = new \PharData($this->filePath . '.tar.gz');
             $phar->decompress();
+        }
 
-            if (is_file($this->downloadTempFile)) {
-                $phar = new \PharData($this->downloadFile);
-                $phar->extractTo(storage_path('app/'));
-            }
+        if (file_exists($this->filePath . '.tar') && !file_exists("{$this->dbFolder}/tmp/extracted")) {
+            $phar = new \PharData($this->filePath . '.tar');
+            $phar->extractTo("{$this->dbFolder}/tmp/extracted");
+        }
 
-            if (is_file($this->dbFilePath)) {
-                $success = true;
-                $this->info("Extracted file to: $this->dbFilePath");
-                if ($delete) {
-                    if (unlink($this->downloadFile)) {
-                        $this->warn("Deleted file: $this->downloadFile");
+        $dirs = array_diff(scandir("{$this->dbFolder}/tmp/extracted"), array('..', '.'));
+
+        $folder = end($dirs);
+        $from = "{$this->dbFolder}/tmp/extracted/$folder/GeoLite2-City.mmdb";
+        $to = "{$this->dbFolder}/$this->dbFileName";
+
+        if (file_exists($from)) {
+            if (copy($from, $to)) {
+                $this->info("File stored: $this->filePath");
+                foreach (array_diff(scandir("{$this->dbFolder}/tmp/extracted/$folder"), array('..', '.')) as $file) {
+                    if (unlink("{$this->dbFolder}/tmp/extracted/$folder/$file")) {
+                        $this->warn("Deleted file: $file");
                     }
-                    if (unlink($this->downloadTempFile)) {
-                        $this->warn("Deleted file: $this->downloadTempFile");
-                    }
+                }
+                if (rmdir("{$this->dbFolder}/tmp/extracted/$folder")) {
+                    $this->warn("Deleted folder: {$this->dbFolder}/tmp/extracted/$folder");
+                }
+                if (rmdir("{$this->dbFolder}/tmp/extracted")) {
+                    $this->warn("Deleted folder: {$this->dbFolder}/tmp/extracted");
+                }
+                if (unlink("{$this->filePath}.tar")) {
+                    $this->warn("Deleted file: {$this->filePath}.tar");
                 }
             }
         }
 
         return $success;
     }
-
 }

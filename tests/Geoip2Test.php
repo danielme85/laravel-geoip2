@@ -29,9 +29,14 @@ class Geoip2Test extends Orchestra\Testbench\TestCase
     protected function getEnvironmentSetUp($app)
     {
         $app->setBasePath(__DIR__);
-        $app['config']->set('geoip2.downloadUrl', 'http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz');
-        $app['config']->set('geoip2.tempFile', 'GeoLite2-City.mmdb.gz');
-        $app['config']->set('geoip2.dbName', 'GeoLite2-City.mmdb');
+
+        if (file_exists(dirname(__DIR__) . '/.env.testing')) {
+            (\Dotenv\Dotenv::create(dirname(__DIR__), '/.env.testing'))->load();
+        }
+
+        $hash1 = getenv('HASH1') ?? env('HASH1') ?? '';
+        $app['config']->set('geoip2.license', $hash1);
+
     }
 
     /**
@@ -41,8 +46,11 @@ class Geoip2Test extends Orchestra\Testbench\TestCase
      */
     public function testDatabaseDownload()
     {
-        $downloader = new \danielme85\Geoip2\Commands\Downloader();
-        $downloader->handle();
+        $this->artisan('geoip:download')
+        ->assertExitCode(0);
+
+        $filePath = storage_path(config('geoip2.folder')).'/'.config('geoip2.filename');
+        $this->assertFileExists($filePath);
     }
 
     /**

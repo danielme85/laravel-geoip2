@@ -41,6 +41,7 @@ class Geoip2ServiceProvider extends ServiceProvider {
         }
 
         //register conf
+        $this->mergeConfigFrom(__DIR__.'/config/geoip2.php', 'geoip2');
         $this->publishes([
             __DIR__.'/config/geoip2.php' => config_path('geoip2.php'),
         ]);

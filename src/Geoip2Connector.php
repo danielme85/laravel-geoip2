@@ -18,13 +18,14 @@ class Geoip2Connector
 {
     public static function connect()
     {
-        if (!config('geoip2.dbName')) {
-            abort(500, 'Config settings not found, did you run "php artisan vendor:publish" ?');
-        }
-        if (!is_file(storage_path(config('geoip2.dbName')))) {
+        $dbFolder = storage_path(config('geoip2.folder'));
+        $dbFileName = config('geoip2.filename');
+        $dbFilePath = "{$dbFolder}/$dbFileName";
+
+        if (!is_file($dbFilePath)) {
             abort(500, 'Geoip2 DB file not found!');
         }
-        return new \GeoIp2\Database\Reader(storage_path(config('geoip2.dbName')));
+        return new \GeoIp2\Database\Reader($dbFilePath);
     }
 
 }

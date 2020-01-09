@@ -1,3 +1,4 @@
 /vendor/
 .idea/*
-composer.lock
+.env.testing
+.phpunit.result.cache
