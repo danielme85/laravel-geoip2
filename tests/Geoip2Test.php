@@ -31,7 +31,8 @@ class Geoip2Test extends Orchestra\Testbench\TestCase
         $app->setBasePath(__DIR__);
 
         if (file_exists(dirname(__DIR__) . '/.env.testing')) {
-            (\Dotenv\Dotenv::create(dirname(__DIR__), '/.env.testing'))->load();
+            $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__), '.env.testing');
+            $dotenv->load();
         }
 
         $hash1 = getenv('HASH1') ?? env('HASH1') ?? '';
