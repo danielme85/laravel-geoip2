@@ -127,7 +127,7 @@ class Downloader extends Command
         $dirs = array_diff(scandir("{$this->dbFolder}/tmp/extracted"), array('..', '.'));
 
         $folder = end($dirs);
-        $from = "{$this->dbFolder}/tmp/extracted/$folder/GeoLite2-City.mmdb";
+        $from = "{$this->dbFolder}/tmp/extracted/$folder/$this->dbFileName";
         $to = "{$this->dbFolder}/$this->dbFileName";
 
         if (file_exists($from)) {
