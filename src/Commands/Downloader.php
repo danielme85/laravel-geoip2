@@ -1,155 +1,135 @@
 <?php
+
 namespace danielme85\Geoip2\Commands;
-/*
- * The MIT License
- *
- * Copyright 2016 Daniel Mellum.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+
 use Illuminate\Console\Command;
-use GuzzleHttp;
+use Illuminate\Support\Facades\Http;
 
 class Downloader extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'geoip:download';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Download geoip data from GeoLite2.';
+    protected $description = 'Download the GeoLite2 database from MaxMind.';
 
-    protected $dbFolder, $dbFileName, $downloadUrl, $license, $folderPath, $filePath;
+    private string $dbFolder;
+    private string $dbFileName;
+    private string $downloadUrl;
+    private string $license;
+    private string $tmpFolder;
+    private string $tmpFilePath;
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function handle(): int
     {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     */
-    public function handle()
-    {
-        $this->dbFolder = storage_path(config('geoip2.folder'));
+        $this->dbFolder   = storage_path(config('geoip2.folder'));
         $this->dbFileName = config('geoip2.filename');
         $this->downloadUrl = config('geoip2.downloadUrl');
-        $this->license = config('geoip2.license');
-        $this->folderPath = "{$this->dbFolder}/tmp";
-        $this->filePath = "{$this->folderPath}/{$this->dbFileName}";
+        $this->license    = config('geoip2.license');
+        $this->tmpFolder  = "{$this->dbFolder}/tmp";
+        $this->tmpFilePath = "{$this->tmpFolder}/{$this->dbFileName}";
 
+        $archivePath = "{$this->tmpFilePath}.tar.gz";
 
-        if (!file_exists($this->filePath.'.tar.gz')) {
-            $this->download();
-        } else {
-            if ($this->confirm('Found downloaded file, download a new one instead?')) {
-                $this->download();
+        if (file_exists($archivePath)) {
+            if (!$this->confirm('Found a previously downloaded archive. Download a fresh copy instead?')) {
+                return $this->extract() ? self::SUCCESS : self::FAILURE;
             }
         }
 
-        $this->extract();
-    }
-
-    /**
-     * Download geoip2 db file
-     *
-     * @return string|null
-     */
-    private function download()
-    {
-        $client = new GuzzleHttp\Client();
-        $uri = $this->downloadUrl.'&license_key='.$this->license;
-
-        if (!file_exists($this->folderPath)) {
-            mkdir($this->folderPath, 0755, true);
+        if (!$this->download()) {
+            return self::FAILURE;
         }
 
-        if ($client->request('GET', $uri, ['sink' => $this->filePath.'.tar'])) {
-            if (file_exists( $this->filePath.'.tar')) {
-                $this->info("File downloaded:  $this->filePath.'.tar'");
-
-                return true;
-            }
-        }
-
-        return false;
+        return $this->extract() ? self::SUCCESS : self::FAILURE;
     }
 
-    /**
-     * Extract geoip file
-     *
-     *
-     * @return bool
-     */
-    private function extract()
+    private function download(): bool
     {
-        $success = false;
+        $uri = $this->downloadUrl . '&license_key=' . $this->license;
 
-        if (file_exists($this->filePath . '.tar.gz') && !file_exists($this->filePath . '.tar')) {
-            $phar = new \PharData($this->filePath . '.tar.gz');
+        if (!file_exists($this->tmpFolder)) {
+            mkdir($this->tmpFolder, 0755, true);
+        }
+
+        $archivePath = "{$this->tmpFilePath}.tar.gz";
+
+        $response = Http::withOptions(['sink' => $archivePath])->get($uri);
+
+        if (!$response->successful() || !file_exists($archivePath)) {
+            $this->error("Download failed (HTTP {$response->status()}).");
+            return false;
+        }
+
+        $this->info("Downloaded archive to: {$archivePath}");
+        return true;
+    }
+
+    private function extract(): bool
+    {
+        $archivePath = "{$this->tmpFilePath}.tar.gz";
+        $tarPath     = "{$this->tmpFilePath}.tar";
+        $extractDir  = "{$this->tmpFolder}/extracted";
+        $destination = "{$this->dbFolder}/{$this->dbFileName}";
+
+        if (!file_exists($archivePath)) {
+            $this->error("Archive not found: {$archivePath}");
+            return false;
+        }
+
+        if (!file_exists($tarPath)) {
+            $phar = new \PharData($archivePath);
             $phar->decompress();
+            $this->line("Decompressed to: {$tarPath}");
         }
 
-        if (file_exists($this->filePath . '.tar') && !file_exists("{$this->dbFolder}/tmp/extracted")) {
-            $phar = new \PharData($this->filePath . '.tar');
-            $phar->extractTo("{$this->dbFolder}/tmp/extracted");
+        if (!file_exists($extractDir)) {
+            $phar = new \PharData($tarPath);
+            $phar->extractTo($extractDir);
+            $this->line("Extracted to: {$extractDir}");
         }
 
-        $dirs = array_diff(scandir("{$this->dbFolder}/tmp/extracted"), array('..', '.'));
-
-        $folder = end($dirs);
-        $from = "{$this->dbFolder}/tmp/extracted/$folder/$this->dbFileName";
-        $to = "{$this->dbFolder}/$this->dbFileName";
-
-        if (file_exists($from)) {
-            if (copy($from, $to)) {
-                $this->info("File stored: $this->filePath");
-                foreach (array_diff(scandir("{$this->dbFolder}/tmp/extracted/$folder"), array('..', '.')) as $file) {
-                    if (unlink("{$this->dbFolder}/tmp/extracted/$folder/$file")) {
-                        $this->warn("Deleted file: $file");
-                    }
-                }
-                if (rmdir("{$this->dbFolder}/tmp/extracted/$folder")) {
-                    $this->warn("Deleted folder: {$this->dbFolder}/tmp/extracted/$folder");
-                }
-                if (rmdir("{$this->dbFolder}/tmp/extracted")) {
-                    $this->warn("Deleted folder: {$this->dbFolder}/tmp/extracted");
-                }
-                if (unlink("{$this->filePath}.tar")) {
-                    $this->warn("Deleted file: {$this->filePath}.tar");
-                }
-            }
+        $entries = array_values(array_diff(scandir($extractDir), ['.', '..']));
+        if (empty($entries)) {
+            $this->error('Extracted archive is empty.');
+            return false;
         }
 
-        return $success;
+        $sourceFile = "{$extractDir}/{$entries[0]}/{$this->dbFileName}";
+
+        if (!file_exists($sourceFile)) {
+            $this->error("Expected DB file not found: {$sourceFile}");
+            return false;
+        }
+
+        if (!file_exists($this->dbFolder)) {
+            mkdir($this->dbFolder, 0755, true);
+        }
+
+        if (!copy($sourceFile, $destination)) {
+            $this->error("Failed to copy DB to: {$destination}");
+            return false;
+        }
+
+        $this->info("Database installed: {$destination}");
+        $this->cleanup($extractDir, $entries[0], $tarPath);
+
+        return true;
+    }
+
+    private function cleanup(string $extractDir, string $innerFolder, string $tarPath): void
+    {
+        $innerDir = "{$extractDir}/{$innerFolder}";
+
+        foreach (array_diff(scandir($innerDir), ['.', '..']) as $file) {
+            unlink("{$innerDir}/{$file}");
+        }
+
+        rmdir($innerDir);
+        rmdir($extractDir);
+
+        if (file_exists($tarPath)) {
+            unlink($tarPath);
+        }
+
+        $this->line('Cleaned up temporary files.');
     }
 }
