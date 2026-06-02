@@ -1,114 +1,80 @@
 # laravel-geoip2
-Laravel 5+ Service provider and DB downloader for Maxminds PHP API GeoIP2.
-https://github.com/maxmind/GeoIP2-php
+
+Laravel service provider and database downloader for [MaxMind's GeoIP2 PHP API](https://github.com/maxmind/GeoIP2-php).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/danielme85/laravel-geoip2.svg?branch=master)](https://travis-ci.org/danielme85/laravel-geoip2)
+[![Tests](https://github.com/danielme85/laravel-geoip2/actions/workflows/tests.yml/badge.svg)](https://github.com/danielme85/laravel-geoip2/actions/workflows/tests.yml)
 
-<b>Per Jan 2020 you now have to create an account at MaxMind and get a "license key". It is still free of charge per now.</b>
+**Requirements:** PHP 8.3+, Laravel 13.x
 
-[https://dev.maxmind.com/geoip/geoip2/geolite2/](https://dev.maxmind.com/geoip/geoip2/geolite2/)
+> MaxMind requires a free account to download GeoLite2 databases. Sign up at [maxmind.com](https://www.maxmind.com/en/geolite2/signup) to get a license key.
 
-### Install
-In composer.json
- ```
- "require": {
-         "danielme85/laravel-geoip2": "dev-master",
-         ....
- }
- ```
- or command: composer require danielme85/laravel-geoip2
- 
- Add your geoip licence to your env file:
- ```
-GEOIP2_LICENSE=XXXXX
+## Install
+
+```bash
+composer require danielme85/laravel-geoip2
 ```
 
-#### Laravel 5.x
- Add to your config/app.php under Service Providers
- <br>*(If you use Laravel 5.5+ you could skip this step as Autodiscovery has been enabled for this package.)*
-           
- ```
- //Service Providers
- danielme85\Geoip2\Geoip2ServiceProvider::class,
- //Facades
- 'Reader'  => danielme85\Geoip2\Facade\Reader::class,
- 
- ```
- 
-#### Lumen 5.x
- Add to your boostrap/app.php file
- ```
- $app->register(danielme85\Geoip2\Geoip2ServiceProvider::class);
- ...
- $app->configure('app'); 
- ...
- class_alias('danielme85\Geoip2\Facade\Reader, 'Reader');
- $app->withFacades();
- ```
- 
-#### Config
- Publish the config file to your Laravel projects
-  ```
+Add your license key to `.env`:
+```
+GEOIP2_LICENSE=YOUR_LICENSE_KEY
+```
+
+Publish the config file:
+```bash
 php artisan vendor:publish --provider="danielme85\Geoip2\Geoip2ServiceProvider"
-  ```
-  The following default settings will work right away:
-  ```
-  return [
-      'geoip2' => [
-          'downloadUrl' => 'http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz', //url db file download
-          'tempFile' => 'app/GeoLite2-City.mmdb.gz', //temp download file name
-          'dbName' => 'app/GeoLite2-City.mmdb', //Geoip DB filename
-          'localhost' => '8.8.8.8' //when running on localhost (or for general testing) you can specify a fake ip address here.
-      ]
-  ];
-  ```
- 
-### Usage
- You need to download the Maxmind Geoip first, the default config is for the city version (about 30MB download, 50MB extracted).
- ```
- php artisan geoip:download
- ```
- With the DB file downloaded you are ready to get some location data:
- ```
- use danielme85\Geoip2\Facade\Reader;
- ...
- $reader = Reader::connect();
- $result = $reader->city($ip);
- ```
- Usage once you have the Reader:connect object is the same as maxminds documentation
- https://github.com/maxmind/GeoIP2-php.
- 
- Example usage, return json location data based on ipv4 address.
- ```php
- <?php
- use danielme85\Geoip2\Facade\Reader;
- ...
- 
- function getLocation(Request $request) {
-    $reader = Reader::connect();
-    /*
-    I was experiencing inaccurate results... until I remembered that my web server traffic was routed trough CloudFlare :p
-    In that case CloudFlare provides the original client ip in the following header information.
-    */   
-    if (isset($_SERVER["HTTP_CF_CONNECTING_IP"])) {
-        $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
-    }
-    else {
-        $ip = $request->ip();
-    }
-    //the city() function from the GeoIp2 Php API will throw an exception if the ip-address is not found in the DB.
-    try {
-        $geodata = $reader->city($ip)->jsonSerialize(); //jsonSerialize seems to actually return an associative array.
-    }
-    catch (\Exception $e) {
-        Log::warning($e->getMessage());
-        return response()->json("Geo-location not found!", 500);
-    }
+```
 
-    return response()->json($geodata);
+## Configuration
+
+`config/geoip2.php`:
+```php
+return [
+    'downloadUrl' => 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&suffix=tar.gz',
+    'folder'      => 'app/geoip2',       // path inside storage/
+    'filename'    => 'GeoLite2-City.mmdb',
+    'localhost'   => '8.8.8.8',          // fallback IP when running locally
+    'license'     => env('GEOIP2_LICENSE', ''),
+];
+```
+
+## Usage
+
+Download the database (~30 MB download, ~50 MB extracted):
+```bash
+php artisan geoip:download
+```
+
+Then use the `Reader` facade — the returned object is a [`GeoIp2\Database\Reader`](https://github.com/maxmind/GeoIP2-php), so all MaxMind methods apply directly:
+
+```php
+use danielme85\Geoip2\Facade\Reader;
+
+$reader = Reader::connect();
+$city   = $reader->city('8.8.8.8');
+
+echo $city->city->name;               // "Mountain View"
+echo $city->country->isoCode;         // "US"
+echo $city->location->latitude;       // 37.386
+echo $city->location->longitude;      // -122.0838
+```
+
+### Handling CloudFlare (or other proxies)
+
+```php
+$ip     = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $request->ip();
+
+try {
+    $geodata = Reader::connect()->city($ip)->jsonSerialize();
+} catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+    // IP not found in database
 }
- ```
+```
 
-<small>This product includes GeoLite2 data created by MaxMind, available from
-<a href="http://www.maxmind.com" target="_blank">http://www.maxmind.com</a></small>
+## Re-downloading the database
+
+The downloaded `.tar.gz` archive is kept in `storage/{folder}/tmp/`. Running `geoip:download` again will prompt before fetching a new copy, so you can re-extract from the cached archive or force a fresh download.
+
+---
+
+<small>This product includes GeoLite2 data created by MaxMind, available from <a href="http://www.maxmind.com">maxmind.com</a>.</small>
